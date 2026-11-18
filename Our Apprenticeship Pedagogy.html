@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Apprenticeship Pedagogy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#0072f5;--ink:#f6f4ec;--muted:rgba(246,244,236,.62);--glass:rgba(7,18,12,.5);--line:rgba(255,255,255,.13)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#1f3d2a;color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+#scene{position:fixed;inset:0}
+#scene canvas{display:block;touch-action:none}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 115% 90% at 50% 42%,transparent 50%,rgba(3,10,6,.6) 100%)}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+
+/* logo */
+.logo{position:fixed;left:30px;top:26px;width:150px;color:#fff;filter:drop-shadow(0 2px 12px rgba(0,0,0,.35));z-index:2}
+.logo svg,.mark svg{width:100%;height:auto;display:block}
+
+/* hotspot labels: number only, name on hover or when chosen */
+.lbl{position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;pointer-events:none;opacity:0;transition:opacity .35s}
+.lbl.on{opacity:1;pointer-events:auto;cursor:pointer}
+.lbl.on.behind{opacity:.22}
+.lbl.peek{opacity:1}
+.lbl .n{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:rgba(7,18,12,.72);border:1.5px solid var(--c);backdrop-filter:blur(4px)}
+.lbl .t{font-size:13px;font-weight:600;white-space:nowrap;border-radius:999px;background:rgba(7,18,12,.75);backdrop-filter:blur(4px);max-width:0;overflow:hidden;opacity:0;padding:4px 0;transition:max-width .4s,opacity .25s,padding .4s}
+.lbl:hover .t,.lbl.peek .t,.lbl.active .t{max-width:340px;opacity:1;padding:4px 11px}
+.lbl.active .n{background:var(--c);color:#0b1610}
+
+/* overview signs */
+.sign{position:absolute;left:0;top:0;display:flex;align-items:center;pointer-events:none;opacity:0;transition:opacity .45s}
+.sign.on{opacity:1;pointer-events:auto;cursor:pointer}
+.sign .stem{width:40px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6))}
+.sign .pill{display:flex;align-items:center;gap:9px;padding:5px 14px 5px 5px;border-radius:999px;background:rgba(7,18,12,.6);border:1px solid var(--line);backdrop-filter:blur(6px);font-weight:600;font-size:14px;transition:background .2s}
+.sign .pill .n{width:24px;height:24px;border-radius:50%;background:var(--c);color:#0b1610;display:grid;place-items:center;font-size:12px;font-weight:800}
+.sign:hover .pill{background:var(--brand);border-color:var(--brand)}
+
+/* altitude rail */
+#rail{position:fixed;right:30px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;z-index:2}
+#rail::before{content:"";position:absolute;right:7.5px;top:22px;bottom:22px;width:1px;background:rgba(255,255,255,.28)}
+.stop{position:relative;display:flex;align-items:center;gap:14px;height:46px}
+.stop .nm{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:0;transform:translateX(8px);transition:.3s;white-space:nowrap;text-shadow:0 1px 10px rgba(0,0,0,.7)}
+.stop:hover .nm,.stop[aria-current="true"] .nm{opacity:1;transform:none}
+.stop .d{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.75);background:#10241a;position:relative;transition:.3s}
+.stop .d::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:var(--c);opacity:.9}
+.stop[aria-current="true"] .d{border-color:#fff;transform:scale(1.25);box-shadow:0 0 0 6px rgba(0,114,245,.35),0 0 18px rgba(0,114,245,.6)}
+.stop[aria-current="true"] .d::after{background:var(--brand)}
+
+/* the one card */
+#card{position:fixed;left:30px;bottom:30px;width:min(440px,calc(100vw - 60px));max-height:calc(100vh - 140px);overflow:auto;background:var(--glass);border:1px solid var(--line);border-radius:24px;padding:24px 26px 22px;backdrop-filter:blur(20px) saturate(1.25);-webkit-backdrop-filter:blur(20px) saturate(1.25);box-shadow:0 30px 80px rgba(0,0,0,.35);transition:opacity .35s,transform .35s;z-index:2}
+#card.swap{opacity:0;transform:translateY(12px)}
+#card::-webkit-scrollbar{width:0}
+.kick{display:flex;flex-wrap:wrap;row-gap:3px;align-items:center;gap:10px;font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding-right:84px}
+.kick i{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+#card h2{font-weight:800;font-size:30px;line-height:1.06;letter-spacing:-.025em;margin:12px 0 10px}
+#card p{margin:0;font-size:15px;line-height:1.55;color:rgba(246,244,236,.82)}
+.navbtns{position:absolute;top:18px;right:18px;display:flex;gap:6px}
+.navbtns button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:background .2s}
+.navbtns button:hover{background:rgba(255,255,255,.12)}
+.navbtns svg{width:14px;height:14px}
+.chips{display:flex;gap:7px;margin-top:18px;flex-wrap:wrap}
+.chip{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);font-weight:700;font-size:13.5px;display:grid;place-items:center;transition:.2s}
+.chip:hover{border-color:var(--c);transform:translateY(-2px)}
+.chip[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#0b1610}
+.more{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);animation:up .4s ease}
+.more b{display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:5px}
+.more .q{color:var(--c);font-weight:600;font-size:14px;margin-bottom:5px}
+.more .d{font-size:14.5px;line-height:1.55;color:rgba(246,244,236,.8)}
+.more .x{font-size:13.5px;line-height:1.5;color:var(--muted)}
+.more .x b{display:inline;font-size:13.5px;color:var(--ink)}
+.cta{margin-top:20px;display:inline-flex;align-items:center;gap:10px;background:var(--brand);color:#fff;font-weight:700;font-size:15px;padding:13px 20px;border-radius:999px;transition:transform .2s,box-shadow .2s;box-shadow:0 10px 30px rgba(0,114,245,.35)}
+.cta:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,114,245,.5)}
+@keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.hint{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);font-size:12.5px;font-weight:500;color:var(--muted);letter-spacing:.04em;pointer-events:none;transition:opacity 1s;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.hint.gone{opacity:0}
+#tour{position:fixed;right:30px;bottom:30px;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 18px 10px 12px;border-radius:999px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:700;font-size:14px;transition:background .25s,transform .2s,opacity .8s}
+#tour:hover{transform:translateY(-2px)}
+#tour .ic{width:28px;height:28px;border-radius:50%;background:var(--brand);display:grid;place-items:center}
+#tour .ic svg{width:12px;height:12px;fill:#fff}
+#tour[aria-pressed="true"]{background:var(--brand);border-color:var(--brand)}
+#tour[aria-pressed="true"] .ic{background:rgba(255,255,255,.2)}
+body.intro #tour{opacity:0;pointer-events:none}
+.prog{position:sticky;bottom:-22px;margin:18px -26px -22px;height:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.prog span{display:block;height:100%;background:var(--brand);transform-origin:left;transform:scaleX(0);animation:prog linear forwards}
+@keyframes prog{to{transform:scaleX(1)}}
+#intro .btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:up 1s .45s ease both}
+.ghost{margin-top:20px;display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:16px;padding:15px 24px;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);transition:background .2s}
+.ghost:hover{background:rgba(255,255,255,.1)}
+#toast{position:fixed;left:50%;top:28px;transform:translate(-50%,-30px);opacity:0;transition:.4s;background:var(--brand);color:#fff;padding:11px 18px;border-radius:999px;font-weight:600;font-size:14px;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:4}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+#intro{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 45%,rgba(6,16,10,.25),rgba(6,16,10,.82));transition:opacity .9s;z-index:5}
+#intro.gone{opacity:0;pointer-events:none}
+body.intro #card,body.intro #rail,body.intro .logo{opacity:0;pointer-events:none}
+#card,#rail,.logo{transition:opacity .8s}
+#intro .box{text-align:center;padding:24px;max-width:760px}
+#intro .mark{width:min(300px,62vw);margin:0 auto 34px;color:#fff;animation:up 1s ease both}
+#intro h1{font-weight:800;font-size:clamp(40px,7vw,78px);line-height:.98;letter-spacing:-.035em;margin:0 0 18px;animation:up 1s .15s ease both}
+#intro .commit{font-size:clamp(14px,1.6vw,17px);color:var(--muted);margin:0 0 30px;animation:up 1s .3s ease both}
+#intro .cta{font-size:16px;padding:15px 26px}
+#loader{position:fixed;inset:0;display:grid;place-items:center;background:#122a1c;z-index:9;transition:opacity .7s}
+#loader.gone{opacity:0;pointer-events:none}
+#loader .rings{display:flex}
+#loader .rings span{width:34px;height:34px;border:3px solid #fff;border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
+#loader .rings span+span{margin-left:-17px;animation-delay:.2s}
+@keyframes pulse{50%{opacity:.35;transform:scale(.9)}}
+#err{display:none;position:fixed;inset:0;place-items:center;text-align:center;padding:30px;z-index:10;background:#122a1c}
+
+@media (max-width:820px){
+  #tour{right:12px;top:66px;bottom:auto;padding:6px;}
+  #tour .tx{display:none}
+  .logo{left:18px;top:18px;width:116px}
+  #rail{right:12px;top:16px;transform:none;flex-direction:row;gap:2px}
+  #rail::before{left:20px;right:20px;top:22px;bottom:auto;width:auto;height:1px}
+  .stop{height:44px;width:30px;justify-content:center}.stop .nm{display:none}
+  #card{left:12px;right:12px;bottom:12px;width:auto;max-height:46vh;padding:20px 20px 18px;border-radius:20px}
+  #card h2{font-size:23px}
+  .hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body class="intro">
+<div id="scene"></div>
+<div class="vignette"></div>
+<div id="labels"></div>
+<div class="logo" aria-label="Primary Goal"></div>
+<nav id="rail" aria-label="Layers of the tree"></nav>
+<section id="card" aria-live="polite"></section>
+<div class="hint">Drag to explore · click anything that glows</div>
+<button id="tour" aria-pressed="false"><span class="ic"></span><span class="tx">Play tour</span></button>
+<div id="toast"></div>
+<div id="intro">
+  <div class="box">
+    <div class="mark" aria-label="Primary Goal"></div>
+    <h1>Our Apprenticeship<br>Pedagogy</h1>
+    <p class="commit">Evidence-informed, inclusive &amp; continuously innovative practice</p>
+    <div class="btns">
+      <button class="cta" id="start">Enter the rainforest <span aria-hidden="true">&rarr;</span></button>
+      <button class="ghost" id="play">&#9654;&nbsp; Play the tour</button>
+    </div>
+  </div>
+</div>
+<div id="loader"><div class="rings"><span></span><span></span></div></div>
+<div id="err"><div><h2>This needs WebGL</h2><p>Your browser couldn't start 3D graphics. Try a recent Chrome, Edge, Safari or Firefox.</p></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const LOGO = `<svg viewBox="0 0 493 87" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M154 65.1V21.9H171.46C171.88 21.9 172.4 21.92 173.02 21.96C173.64 21.98 174.23 22.04 174.79 22.14C177.19 22.52 179.19 23.34 180.79 24.6C182.41 25.86 183.62 27.45 184.42 29.37C185.22 31.29 185.62 33.41 185.62 35.73C185.62 38.07 185.22 40.2 184.42 42.12C183.62 44.04 182.41 45.63 180.79 46.89C179.19 48.15 177.19 48.97 174.79 49.35C174.23 49.43 173.63 49.49 172.99 49.53C172.37 49.57 171.86 49.59 171.46 49.59H160.27V65.1H154ZM160.27 43.65H171.22C171.62 43.65 172.06 43.63 172.54 43.59C173.04 43.55 173.51 43.48 173.95 43.38C175.23 43.08 176.26 42.53 177.04 41.73C177.82 40.91 178.38 39.97 178.72 38.91C179.06 37.85 179.23 36.79 179.23 35.73C179.23 34.67 179.06 33.62 178.72 32.58C178.38 31.52 177.82 30.59 177.04 29.79C176.26 28.97 175.23 28.41 173.95 28.11C173.51 27.99 173.04 27.91 172.54 27.87C172.06 27.83 171.62 27.81 171.22 27.81H160.27V43.65Z" fill="currentColor"/><path d="M190.417 65.1V32.7H195.997V40.56L195.217 39.54C195.617 38.5 196.137 37.55 196.777 36.69C197.417 35.81 198.157 35.09 198.997 34.53C199.817 33.93 200.727 33.47 201.727 33.15C202.747 32.81 203.787 32.61 204.847 32.55C205.907 32.47 206.927 32.52 207.907 32.7V38.58C206.847 38.3 205.667 38.22 204.367 38.34C203.087 38.46 201.907 38.87 200.827 39.57C199.807 40.23 198.997 41.03 198.397 41.97C197.817 42.91 197.397 43.96 197.137 45.12C196.877 46.26 196.747 47.47 196.747 48.75V65.1H190.417Z" fill="currentColor"/><path d="M213.02 27.39V21.3H219.29V27.39H213.02ZM213.02 65.1V32.7H219.29V65.1H213.02Z" fill="currentColor"/><path d="M265.919 65.1L265.949 44.91C265.949 42.57 265.349 40.75 264.149 39.45C262.949 38.13 261.369 37.47 259.409 37.47C258.209 37.47 257.109 37.75 256.109 38.31C255.129 38.85 254.329 39.67 253.709 40.77C253.109 41.85 252.809 43.21 252.809 44.85L249.779 43.32C249.739 41.04 250.219 39.04 251.219 37.32C252.239 35.6 253.619 34.27 255.359 33.33C257.099 32.37 259.049 31.89 261.209 31.89C264.709 31.89 267.419 32.94 269.339 35.04C271.259 37.14 272.219 39.93 272.219 43.41L272.189 65.1H265.919ZM227.069 65.1V32.7H232.649V42.06H233.369V65.1H227.069ZM246.509 65.1L246.539 45.03C246.539 42.67 245.939 40.82 244.739 39.48C243.559 38.14 241.969 37.47 239.969 37.47C237.989 37.47 236.389 38.15 235.169 39.51C233.969 40.87 233.369 42.65 233.369 44.85L230.369 42.93C230.369 40.81 230.879 38.92 231.899 37.26C232.919 35.6 234.299 34.29 236.039 33.33C237.779 32.37 239.749 31.89 241.949 31.89C244.249 31.89 246.209 32.38 247.829 33.36C249.449 34.32 250.679 35.67 251.519 37.41C252.379 39.15 252.809 41.17 252.809 43.47L252.779 65.1H246.509Z" fill="currentColor"/><path d="M287.959 66C285.559 66 283.549 65.56 281.929 64.68C280.309 63.78 279.079 62.6 278.239 61.14C277.419 59.66 277.009 58.04 277.009 56.28C277.009 54.64 277.299 53.2 277.879 51.96C278.459 50.72 279.319 49.67 280.459 48.81C281.599 47.93 282.999 47.22 284.659 46.68C286.099 46.26 287.729 45.89 289.549 45.57C291.369 45.25 293.279 44.95 295.279 44.67C297.299 44.39 299.299 44.11 301.279 43.83L298.999 45.09C299.039 42.55 298.499 40.67 297.379 39.45C296.279 38.21 294.379 37.59 291.679 37.59C289.979 37.59 288.419 37.99 286.999 38.79C285.579 39.57 284.589 40.87 284.029 42.69L278.179 40.89C278.979 38.11 280.499 35.9 282.739 34.26C284.999 32.62 287.999 31.8 291.739 31.8C294.639 31.8 297.159 32.3 299.299 33.3C301.459 34.28 303.039 35.84 304.039 37.98C304.559 39.04 304.879 40.16 304.999 41.34C305.119 42.52 305.179 43.79 305.179 45.15V65.1H299.629V57.69L300.709 58.65C299.369 61.13 297.659 62.98 295.579 64.2C293.519 65.4 290.979 66 287.959 66ZM289.069 60.87C290.849 60.87 292.379 60.56 293.659 59.94C294.939 59.3 295.969 58.49 296.749 57.51C297.529 56.53 298.039 55.51 298.279 54.45C298.619 53.49 298.809 52.41 298.849 51.21C298.909 50.01 298.939 49.05 298.939 48.33L300.979 49.08C298.999 49.38 297.199 49.65 295.579 49.89C293.959 50.13 292.489 50.37 291.169 50.61C289.869 50.83 288.709 51.1 287.689 51.42C286.829 51.72 286.059 52.08 285.379 52.5C284.719 52.92 284.189 53.43 283.789 54.03C283.409 54.63 283.219 55.36 283.219 56.22C283.219 57.06 283.429 57.84 283.849 58.56C284.269 59.26 284.909 59.82 285.769 60.24C286.629 60.66 287.729 60.87 289.069 60.87Z" fill="currentColor"/><path d="M311.77 65.1V32.7H317.35V40.56L316.57 39.54C316.97 38.5 317.49 37.55 318.13 36.69C318.77 35.81 319.51 35.09 320.35 34.53C321.17 33.93 322.08 33.47 323.08 33.15C324.1 32.81 325.14 32.61 326.2 32.55C327.26 32.47 328.28 32.52 329.26 32.7V38.58C328.2 38.3 327.02 38.22 325.72 38.34C324.44 38.46 323.26 38.87 322.18 39.57C321.16 40.23 320.35 41.03 319.75 41.97C319.17 42.91 318.75 43.96 318.49 45.12C318.23 46.26 318.1 47.47 318.1 48.75V65.1H311.77Z" fill="currentColor"/><path d="M337.332 79.5L343.602 62.43L343.692 67.47L329.562 32.7H336.102L346.662 59.55H344.742L354.822 32.7H361.182L343.302 79.5H337.332Z" fill="currentColor"/><path d="M393.164 66C390.264 66 387.594 65.5 385.154 64.5C382.714 63.48 380.594 62 378.794 60.06C376.994 58.12 375.594 55.76 374.594 52.98C373.594 50.2 373.094 47.04 373.094 43.5C373.094 38.84 373.944 34.84 375.644 31.5C377.344 28.14 379.704 25.56 382.724 23.76C385.744 21.94 389.224 21.03 393.164 21.03C398.244 21.03 402.294 22.21 405.314 24.57C408.354 26.93 410.424 30.19 411.524 34.35L405.164 35.49C404.284 32.91 402.864 30.85 400.904 29.31C398.944 27.77 396.484 26.99 393.524 26.97C390.464 26.95 387.914 27.63 385.874 29.01C383.854 30.39 382.334 32.33 381.314 34.83C380.294 37.31 379.774 40.2 379.754 43.5C379.734 46.8 380.234 49.69 381.254 52.17C382.274 54.63 383.804 56.55 385.844 57.93C387.904 59.31 390.464 60.01 393.524 60.03C395.984 60.07 398.094 59.62 399.854 58.68C401.634 57.72 403.044 56.32 404.084 54.48C405.124 52.64 405.794 50.38 406.094 47.7H397.694V42.66H412.754C412.794 43.02 412.824 43.5 412.844 44.1C412.864 44.68 412.874 45.05 412.874 45.21C412.874 49.21 412.104 52.78 410.564 55.92C409.024 59.06 406.784 61.53 403.844 63.33C400.904 65.11 397.344 66 393.164 66Z" fill="currentColor"/><path d="M431.723 66C428.483 66 425.673 65.27 423.293 63.81C420.913 62.35 419.073 60.34 417.773 57.78C416.493 55.2 415.853 52.23 415.853 48.87C415.853 45.49 416.513 42.52 417.833 39.96C419.153 37.38 421.003 35.38 423.383 33.96C425.763 32.52 428.543 31.8 431.723 31.8C434.963 31.8 437.773 32.53 440.153 33.99C442.533 35.45 444.373 37.46 445.673 40.02C446.973 42.58 447.623 45.53 447.623 48.87C447.623 52.25 446.963 55.23 445.643 57.81C444.343 60.37 442.503 62.38 440.123 63.84C437.743 65.28 434.943 66 431.723 66ZM431.723 60.09C434.823 60.09 437.133 59.05 438.653 56.97C440.193 54.87 440.963 52.17 440.963 48.87C440.963 45.49 440.183 42.79 438.623 40.77C437.083 38.73 434.783 37.71 431.723 37.71C429.623 37.71 427.893 38.19 426.533 39.15C425.173 40.09 424.163 41.4 423.503 43.08C422.843 44.74 422.513 46.67 422.513 48.87C422.513 52.27 423.293 54.99 424.853 57.03C426.413 59.07 428.703 60.09 431.723 60.09Z" fill="currentColor"/><path d="M462.166 66C459.766 66 457.756 65.56 456.136 64.68C454.516 63.78 453.286 62.6 452.446 61.14C451.626 59.66 451.216 58.04 451.216 56.28C451.216 54.64 451.506 53.2 452.086 51.96C452.666 50.72 453.526 49.67 454.666 48.81C455.806 47.93 457.206 47.22 458.866 46.68C460.306 46.26 461.936 45.89 463.756 45.57C465.576 45.25 467.486 44.95 469.486 44.67C471.506 44.39 473.506 44.11 475.486 43.83L473.206 45.09C473.246 42.55 472.706 40.67 471.586 39.45C470.486 38.21 468.586 37.59 465.886 37.59C464.186 37.59 462.626 37.99 461.206 38.79C459.786 39.57 458.796 40.87 458.236 42.69L452.386 40.89C453.186 38.11 454.706 35.9 456.946 34.26C459.206 32.62 462.206 31.8 465.946 31.8C468.846 31.8 471.366 32.3 473.506 33.3C475.666 34.28 477.246 35.84 478.246 37.98C478.766 39.04 479.086 40.16 479.206 41.34C479.326 42.52 479.386 43.79 479.386 45.15V65.1H473.836V57.69L474.916 58.65C473.576 61.13 471.866 62.98 469.786 64.2C467.726 65.4 465.186 66 462.166 66ZM463.276 60.87C465.056 60.87 466.586 60.56 467.866 59.94C469.146 59.3 470.176 58.49 470.956 57.51C471.736 56.53 472.246 55.51 472.486 54.45C472.826 53.49 473.016 52.41 473.056 51.21C473.116 50.01 473.146 49.05 473.146 48.33L475.186 49.08C473.206 49.38 471.406 49.65 469.786 49.89C468.166 50.13 466.696 50.37 465.376 50.61C464.076 50.83 462.916 51.1 461.896 51.42C461.036 51.72 460.266 52.08 459.586 52.5C458.926 52.92 458.396 53.43 457.996 54.03C457.616 54.63 457.426 55.36 457.426 56.22C457.426 57.06 457.636 57.84 458.056 58.56C458.476 59.26 459.116 59.82 459.976 60.24C460.836 60.66 461.936 60.87 463.276 60.87Z" fill="currentColor"/><path d="M486.576 65.1V21H492.846V65.1H486.576Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M87 79C106.606 79 122.5 63.1061 122.5 43.5C122.5 23.8939 106.606 8 87 8C67.3939 8 51.5 23.8939 51.5 43.5C51.5 63.1061 67.3939 79 87 79ZM87 87C111.024 87 130.5 67.5244 130.5 43.5C130.5 19.4756 111.024 0 87 0C62.9756 0 43.5 19.4756 43.5 43.5C43.5 67.5244 62.9756 87 87 87Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M43.5 79C63.1061 79 79 63.1061 79 43.5C79 23.8939 63.1061 8 43.5 8C23.8939 8 8 23.8939 8 43.5C8 63.1061 23.8939 79 43.5 79ZM43.5 87C67.5244 87 87 67.5244 87 43.5C87 19.4756 67.5244 0 43.5 0C19.4756 0 0 19.4756 0 43.5C0 67.5244 19.4756 87 43.5 87Z" fill="currentColor"/></svg>`;
+const $ = s => document.querySelector(s);
+const V3 = THREE.Vector3;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- content ---------------- */
+const LEVELS = [
+ { id:'roots', stratum:'Roots', short:'What we believe', group:'Curriculum design', color:0xf5b82e,
+   title:'What we believe about learning through apprenticeships',
+   intro:'Everything grows from here. These eight beliefs feed every programme we design, every session we run and every conversation with an employer.',
+   callout:['Evidence-informed teaching + coaching + authentic workplace participation','Enabled jointly by learner, provider and employer.'],
+   items:[
+    {t:'Learner agency & self-regulation', d:'Apprentices own their learning. They set goals, monitor their progress and know what to do when they get stuck.'},
+    {t:'Occupational knowledge & modelling', d:'We make expert practice visible: how professionals think, decide and act, not just what they know.'},
+    {t:'Employer-led workplace learning', d:'The workplace is the main classroom. Employers shape what gets learned and where it gets used.'},
+    {t:'Guided practice, feedback & reflection', d:'Skills grow through deliberate practice, timely feedback and honest reflection on what actually happened.'},
+    {t:'Coaching, mentoring & challenge', d:'Coaches stretch thinking, ask the awkward question and stay alongside apprentices through the hard bits.'},
+    {t:'Participation, belonging & identity', d:'Learning is becoming. Apprentices grow into a professional community and start to see themselves as part of it.'},
+    {t:'Inclusive, accessible & responsive', d:'Every apprentice can take part and succeed. We adapt to people, not the other way round.'},
+    {t:'Adaptive expertise & workplace impact', d:'The aim is not a ticked checklist. It is people who can handle the unfamiliar and make work better.'},
+   ]},
+ { id:'forest-floor', stratum:'Forest floor', short:'Design backwards', group:'Curriculum design', color:0x9be35a,
+   title:'Design backwards from the change',
+   intro:'Work backwards from changed learner behaviour, not forwards from the KSB list or slide content. The trail leads out to the change we want, so we plan it from that end first.',
+   callout:['Follow the trail in reverse','Start at the target, walk back to the trailhead, then check the journey still leads to the change.'],
+   items:[
+    {t:'Desired workplace change', q:'What should the learner do differently?', d:'Start with the behaviour you want to see at work on a Monday morning.'},
+    {t:'Evidence of impact', q:'What would demonstrate the change?', d:'Agree what would count as proof, from the employer’s point of view as well as ours.'},
+    {t:'KSBs & foundations', q:'What knowledge, skills, behaviours and practices are required?', d:'Only now map to the standard, pulling in the KSBs the change actually depends on.'},
+    {t:'Design the journey', q:'What experiences will enable the change?', d:'Build the sequence of experiences that gets the learner from here to there.'},
+   ]},
+ { id:'understorey', stratum:'Understorey', short:'Where KSBs are learned best', group:'Curriculum design', color:0x4aa3ff,
+   title:'Put each KSB where it is learned best',
+   intro:'Not everything needs a live session. Each piece of knowledge, skill or behaviour goes to the branch where it grows best.',
+   callout:['Protect live time','for modelling, interpretation, application, challenge and feedback.'],
+   items:[
+    {t:'Build foundations', q:'Easy, technology-enabled', d:'Fast techniques, low-stakes practice and just-in-time knowledge. Self-paced content clears the ground so live time isn’t spent on what a video does better.'},
+    {t:'Make sense together', q:'Explain, question, discuss and challenge', d:'Live sessions with coaches and peers, where understanding gets tested, stretched and connected to real work.'},
+    {t:'Apply, test & improve at work', q:'Practice with workplace support and feedback', d:'The real job is where it sticks. Line managers and mentors close the loop with support and feedback.'},
+   ]},
+ { id:'canopy', stratum:'Canopy', short:'How learning develops', group:'Learner experience', color:0xff4b3a,
+   title:'How learning develops',
+   intro:'A cycle, not a conveyor belt. Learners travel round it again and again, and every loop reaches a little further.',
+   callout:['Good storytelling connects the journey','The vine that ties the cycle together: authentic, connected stories place learners in purposeful workplace decisions, contextualise dilemmas, and mirror and transfer to practice.'],
+   items:[
+    {t:'Encounter / provocation', d:'Meet a meaningful workplace challenge, story or activity.'},
+    {t:'Build understanding', d:'Develop knowledge, skills, boundaries and strategies.'},
+    {t:'Apply in practice', d:'Use the learning in real or simulated activity.'},
+    {t:'Examine impact', d:'Evaluate actions, feedback and outcomes.'},
+    {t:'Adapt & advance', d:'Innovate and generalise. Apply across contexts.'},
+   ]},
+ { id:'emergent', stratum:'Emergent', short:'The result', group:'Outcome', color:0xffe7a0,
+   title:'The result',
+   intro:'What breaks through the canopy: changed professional behaviour, improved workplace practice and the capability to adapt and innovate.',
+   items:[
+    {t:'Knowledge', d:'Secure understanding they can explain, connect and use.'},
+    {t:'Skills', d:'They can do it, to standard, in the real workplace.'},
+    {t:'Behaviours', d:'Professional habits that show up without prompting.'},
+    {t:'Identity', d:'They see themselves as a professional in their field.'},
+    {t:'Impact', d:'A visible improvement in how work gets done.'},
+   ]},
+];
+const hex = c => '#'+c.toString(16).padStart(6,'0');
+
+/* ---------------- renderer ---------------- */
+let renderer;
+try { renderer = new THREE.WebGLRenderer({antialias:true}); }
+catch(e){ $('#err').style.display='grid'; $('#loader').remove(); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+$('#scene').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const FOG = new THREE.Color(0x25452f);
+scene.background = FOG;
+scene.fog = new THREE.FogExp2(FOG, 0.0145);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 500);
+camera.position.set(46, 30, 46);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.target.set(0,17,0);
+controls.minDistance = 3; controls.maxDistance = 95;
+controls.maxPolarAngle = Math.PI*0.49;
+controls.autoRotate = !REDUCED; controls.autoRotateSpeed = 0.35;
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), .75, .55, .88);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* seeded random so the forest is the same every visit */
+let seed = 11;
+const rnd = () => { seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+const R = (a,b) => a+(b-a)*rnd();
+
+const mat = (c,o={}) => new THREE.MeshStandardMaterial({color:c, flatShading:true, roughness:.92, metalness:0, ...o});
+const barkMat = mat(0x6e5038), barkDark = mat(0x4f3a29);
+
+/* sky dome */
+{
+  const g = new THREE.SphereGeometry(300, 32, 16);
+  const m = new THREE.ShaderMaterial({ side:THREE.BackSide, depthWrite:false, fog:false,
+    uniforms:{ top:{value:new THREE.Color(0xf3e7a8)}, mid:{value:new THREE.Color(0x6f9a5c)}, bot:{value:FOG} },
+    vertexShader:`varying vec3 vP; void main(){ vP=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+    fragmentShader:`uniform vec3 top,mid,bot; varying vec3 vP; void main(){ float h=vP.y; vec3 c=mix(bot,mid,smoothstep(0.02,0.3,h)); c=mix(c,top,smoothstep(0.35,0.95,h)); gl_FragColor=vec4(c,1.0);} `});
+  scene.add(new THREE.Mesh(g,m));
+}
+
+/* lights */
+scene.add(new THREE.HemisphereLight(0xd9f2b6, 0x1a2c13, 1.15));
+const sun = new THREE.DirectionalLight(0xffe0a3, 1.7); sun.position.set(30,90,25); scene.add(sun);
+const crownLight = new THREE.PointLight(0xffd27a, 16, 22, 1.6); crownLight.position.set(0,38.5,0); scene.add(crownLight);
+
+/* glow texture */
+function glowTex(){ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d');
+  const gr=g.createRadialGradient(32,32,0,32,32,32); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.22,'rgba(255,255,255,.55)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr; g.fillRect(0,0,64,64); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; }
+const GLOW = glowTex();
+
+/* ---------------- ground ---------------- */
+function groundH(x,z){ const d=Math.hypot(x,z); const h=(Math.sin(x*.13)+Math.cos(z*.11))*.6+Math.sin(x*.37+z*.29)*.3; return h*THREE.MathUtils.smoothstep(d,9,30); }
+{
+  const g = new THREE.PlaneGeometry(320,320,110,110); g.rotateX(-Math.PI/2);
+  const p=g.attributes.position, cols=[], c=new THREE.Color();
+  for(let i=0;i<p.count;i++){ const x=p.getX(i), z=p.getZ(i); p.setY(i, groundH(x,z));
+    c.setHSL(.26+R(-.03,.04), .42+R(0,.12), .11+R(0,.06)); cols.push(c.r,c.g,c.b); }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(cols,3)); g.computeVertexNormals();
+  scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({vertexColors:true, flatShading:true, roughness:1})));
+}
+
+const occluders = [];
+const UP = new V3(0,1,0);
+function limb(a,b,r0,r1,m=barkMat){
+  const d=new V3().subVectors(b,a), len=d.length();
+  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,7,1), m);
+  mesh.position.copy(a).addScaledVector(d,.5); mesh.quaternion.setFromUnitVectors(UP,d.normalize());
+  scene.add(mesh); occluders.push(mesh);
+  const j=new THREE.Mesh(new THREE.IcosahedronGeometry(r1*1.05,0), m); j.position.copy(b); scene.add(j);
+  return mesh;
+}
+
+/* ---------------- the great tree ---------------- */
+const TRUNK_H = 36;
+{
+  const g = new THREE.CylinderGeometry(.85, 2.3, TRUNK_H, 18, 36);
+  const p = g.attributes.position;
+  for(let i=0;i<p.count;i++){ const x=p.getX(i), y=p.getY(i), z=p.getZ(i), r=Math.hypot(x,z); if(r<.01) continue;
+    const a=Math.atan2(z,x), n=1+.09*Math.sin(a*5+y*.4)+.05*Math.sin(a*11-y*.9), na=a+y*.03;
+    p.setXYZ(i, Math.cos(na)*r*n, y, Math.sin(na)*r*n); }
+  g.computeVertexNormals();
+  const trunk = new THREE.Mesh(g, barkMat); trunk.position.y = TRUNK_H/2; scene.add(trunk); occluders.push(trunk);
+}
+
+/* hotspots: a glowing core inside the Primary Goal double ring */
+const hotspots = [];
+const ringGeo = new Map();
+function hotspot(pos, L, i, size=.55){
+  const color = LEVELS[L].color, base = new THREE.Color(color);
+  const m = new THREE.Group(); m.position.copy(pos);
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(size*.5,2), new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:2.4, roughness:.3}));
+  m.add(core);
+  if(!ringGeo.has(size)) ringGeo.set(size, new THREE.TorusGeometry(size*1.05, size*.07, 8, 56));
+  const ringMat = new THREE.MeshBasicMaterial({color:base.clone().multiplyScalar(2.2)});
+  const mark = new THREE.Group(); m.add(mark);
+  [-1,1].forEach(sx=>{ const r=new THREE.Mesh(ringGeo.get(size), ringMat); r.position.x = sx*size*.525; mark.add(r); });
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW, color, transparent:true, opacity:.45, blending:THREE.AdditiveBlending, depthWrite:false}));
+  halo.scale.setScalar(size*4.4); m.add(halo);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(size*2,8,6), new THREE.MeshBasicMaterial({visible:false})); m.add(hit);
+  hit.userData.owner = m;
+  m.userData = {L, i, size, halo, hit, s:1, core, mark, ringMat, base};
+  scene.add(m); hotspots.push(m);
+  LEVELS[L].items[i].pos = pos.clone();
+  return m;
+}
+
+/* 1. ROOTS: eight buttress roots */
+function rootFin(L,H){ const s=new THREE.Shape(); s.moveTo(0,0); s.lineTo(L,0); s.quadraticCurveTo(L*.3,H*.22,0,H); s.lineTo(0,0);
+  const g=new THREE.ExtrudeGeometry(s,{depth:.42,bevelEnabled:true,bevelThickness:.12,bevelSize:.12,bevelSegments:1,curveSegments:12}); g.translate(0,0,-.21); return g; }
+const ROOT_OFF = Math.PI/4 - Math.PI/8;
+for(let i=0;i<8;i++){
+  const a = ROOT_OFF + i/8*Math.PI*2, Lr = 6.2+R(-.4,.4);
+  const fin = new THREE.Mesh(rootFin(Lr, 5.2+R(-.5,.6)), barkMat);
+  fin.rotation.y = -a; fin.position.set(Math.cos(a)*1.3, -.15, Math.sin(a)*1.3);
+  scene.add(fin); occluders.push(fin);
+  const r = 1.3+Lr+.9, x=Math.cos(a)*r, z=Math.sin(a)*r;
+  hotspot(new V3(x, groundH(x,z)+.85, z), 0, i, .5);
+  // small surface root between fins
+  const b = a + Math.PI/8, l2 = R(2.5,3.6);
+  const sm = new THREE.Mesh(rootFin(l2, 1.6), barkDark); sm.rotation.y=-b; sm.position.set(Math.cos(b)*1.6,-.1,Math.sin(b)*1.6); scene.add(sm);
+}
+
+/* 2. FOREST FLOOR: the trail */
+const trailPts = [[3.5,9],[8,12.5],[12.5,16.5],[13.8,22.5],[10,27.5],[4,30.5]].map(([x,z])=>new V3(x,groundH(x,z)+.05,z));
+const trail = new THREE.CatmullRomCurve3(trailPts);
+{
+  const N = Math.floor(trail.getLength()/1.05);
+  const stones = new THREE.InstancedMesh(new THREE.CylinderGeometry(.42,.55,.2,7), mat(0x8e927a), N+1);
+  const o = new THREE.Object3D();
+  for(let k=0;k<=N;k++){ const p=trail.getPointAt(k/N); o.position.set(p.x+R(-.2,.2), groundH(p.x,p.z)+.06, p.z+R(-.2,.2)); o.rotation.set(R(-.08,.08),R(0,3),R(-.08,.08)); o.scale.setScalar(R(.8,1.15)); o.updateMatrix(); stones.setMatrixAt(k,o.matrix); }
+  scene.add(stones);
+  const pts = trail.getSpacedPoints(160).map(p=>new V3(p.x, groundH(p.x,p.z)+.32, p.z));
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({color:LEVELS[1].color, dashSize:.45, gapSize:.35, transparent:true, opacity:.85}));
+  line.computeLineDistances(); scene.add(line);
+}
+const TRAIL_T = [.96, .69, .42, .14]; // change at the far end, journey near the trailhead
+TRAIL_T.forEach((t,i)=>{
+  const p = trail.getPointAt(t), side = trail.getTangentAt(t).cross(UP).normalize().multiplyScalar(1.3);
+  const x=p.x+side.x, z=p.z+side.z, gy=groundH(x,z);
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(.32,.5,1.7,7), mat(0x6c7758)); post.position.set(x,gy+.85,z); scene.add(post);
+  const moss = new THREE.Mesh(new THREE.IcosahedronGeometry(.42,0), mat(0x58923a)); moss.position.set(x,gy+1.72,z); moss.scale.set(1,.45,1); scene.add(moss);
+  hotspot(new V3(x, gy+2.45, z), 1, i, .5);
+});
+const TRAIL_C = LEVELS[1].items.reduce((a,it)=>a.add(it.pos), new V3()).multiplyScalar(1/4);
+// archery target behind the 'desired change' marker
+{
+  const p = LEVELS[1].items[0].pos, tg = new THREE.Group();
+  [[1.25,0xe8442e],[.95,0xf4efdd],[.65,0xe8442e],[.35,0xf4efdd]].forEach(([r,c],k)=>{ const d=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.08,20), mat(c)); d.rotation.x=Math.PI/2; d.position.z=-.05*k; tg.add(d); });
+  tg.position.set(p.x+.6, p.y-.4, p.z+2.1); tg.lookAt(TRAIL_C.x-12, p.y+2, TRAIL_C.z-8); scene.add(tg);
+}
+
+/* leaf geometry (reused) */
+const leafShape = new THREE.Shape(); leafShape.moveTo(0,0); leafShape.quadraticCurveTo(.62,.55,0,1.7); leafShape.quadraticCurveTo(-.62,.55,0,0);
+const leafGeo = new THREE.ShapeGeometry(leafShape, 6);
+{ const p=leafGeo.attributes.position; for(let i=0;i<p.count;i++){ const y=p.getY(i); p.setZ(i, .26*y*y + Math.abs(p.getX(i))*.25); } leafGeo.computeVertexNormals(); }
+const leafMat = new THREE.MeshStandardMaterial({color:0xffffff, side:THREE.DoubleSide, flatShading:true, roughness:.8});
+function leafFan(pos, n, scale, tilt, color, rotOff=0){
+  const g=new THREE.Group(); g.position.copy(pos);
+  const m = mat(color,{side:THREE.DoubleSide});
+  for(let k=0;k<n;k++){ const l=new THREE.Mesh(leafGeo,m); const pivot=new THREE.Group(); pivot.rotation.y = rotOff + k/n*Math.PI*2 + R(-.2,.2); l.rotation.x = tilt + R(-.15,.15); l.scale.setScalar(scale*R(.85,1.1)); pivot.add(l); g.add(pivot); }
+  scene.add(g); return g;
+}
+
+/* 3. UNDERSTOREY: three branches with leaf platforms */
+const U_ANG = [Math.PI/4 + 1.3, Math.PI/4, Math.PI/4 - 1.3];
+U_ANG.forEach((a,i)=>{
+  const c=Math.cos(a), s=Math.sin(a);
+  const p0=new V3(c*1.1,9.4,s*1.1), p1=new V3(c*4.2,11.3,s*4.2), p2=new V3(c*7.3,11.8,s*7.3);
+  limb(p0,p1,.6,.42); limb(p1,p2,.42,.26);
+  leafFan(p2.clone().add(new V3(0,.05,0)), 9, 2.1, 1.25, [0x2f7a3a,0x3c8a3f,0x2a6d35][i]);
+  leafFan(p1.clone().add(new V3(0,.2,0)), 5, 1.5, .9, 0x3d7f33, a);
+  hotspot(new V3(c*7.3, 13.1, s*7.3), 2, i, .55);
+});
+
+/* 4. CANOPY: the learning cycle vine */
+const RING_R = 7.6, RING_Y = 21, RING_A0 = Math.PI/4 - .55;
+class RingCurve extends THREE.Curve { getPoint(t, out=new V3()){ const a=RING_A0+t*Math.PI*2; return out.set(Math.cos(a)*RING_R, RING_Y+Math.sin(a*3)*.45, Math.sin(a)*RING_R); } }
+const ring = new RingCurve();
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(ring,200,.2,8,true), mat(0x4f7d2c)));
+{ // storytelling glow strand
+  const strand = new THREE.Mesh(new THREE.TubeGeometry(ring,200,.07,6,true), new THREE.MeshBasicMaterial({color:0xff9a6a, transparent:true, opacity:.55}));
+  strand.position.y = .26; scene.add(strand);
+}
+for(let i=0;i<5;i++){
+  hotspot(ring.getPoint(i/5), 3, i, .6);
+  // arrow along the vine
+  const t=i/5+.1, p=ring.getPoint(t), tan=ring.getTangent(t);
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(.24,.65,8), mat(0xffb36b,{emissive:0xff6a3a, emissiveIntensity:.5}));
+  cone.position.copy(p); cone.quaternion.setFromUnitVectors(UP,tan); scene.add(cone);
+  // limb holding the vine
+  const la = RING_A0 + (i/5+.1)*Math.PI*2, tp=ring.getPoint(i/5+.1);
+  limb(new V3(Math.cos(la)*1.0,18.6,Math.sin(la)*1.0), new V3(tp.x*.55,20.2,tp.z*.55), .5,.34);
+  limb(new V3(tp.x*.55,20.2,tp.z*.55), new V3(tp.x, tp.y-.15, tp.z), .34,.2);
+  // small leaves along the vine
+  for(let k=0;k<6;k++){ const q=ring.getPoint(i/5+.03+k*.028); const l=new THREE.Mesh(leafGeo, mat(0x4f9a3a,{side:THREE.DoubleSide})); l.position.copy(q); l.rotation.set(R(-1,1),R(0,6),R(-1,1)); l.scale.setScalar(.45); scene.add(l); }
+}
+const pulses = [0,.33,.66].map(o=>{ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffc08a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})); s.scale.setScalar(1.3); s.userData.o=o; scene.add(s); return s; });
+
+/* canopy roof */
+const canopyGreens=[0x2f6b2c,0x3b7d31,0x4b8f36,0x2a5e2a,0x5a9c3c];
+function clump(x,y,z,r,sy=.62,c){ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1), mat(c ?? canopyGreens[Math.floor(R(0,canopyGreens.length))])); m.position.set(x,y,z); m.scale.set(1,sy,1); m.rotation.y=R(0,6); scene.add(m); return m; }
+for(let k=0;k<46;k++){ const a=R(0,Math.PI*2), r=R(1.5,14.5); clump(Math.cos(a)*r, R(26.6,30.2)+ (r>11? -1.2:0), Math.sin(a)*r, R(2,3.6)); }
+for(let k=0;k<6;k++){ const a=RING_A0+R(0,Math.PI*2), r=R(2,4.5); limb(new V3(Math.cos(a)*.9,23,Math.sin(a)*.9), new V3(Math.cos(a)*r*2,27,Math.sin(a)*r*2), .5,.3); }
+
+/* 5. EMERGENT: umbrella crown and the result flower */
+for(let k=0;k<16;k++){ const a=k/16*Math.PI*2+R(-.2,.2), r=R(1.5,6.8); clump(Math.cos(a)*r, 33.2+R(-.6,.6)-r*.12, Math.sin(a)*r, R(1.6,2.6), .5, [0x4f9a3a,0x5fae42,0x447f32][k%3]); }
+const crownCore = new THREE.Mesh(new THREE.IcosahedronGeometry(.95,2), new THREE.MeshStandardMaterial({color:0xffd770, emissive:0xffb93a, emissiveIntensity:.55, roughness:.3}));
+crownCore.position.set(0,36.9,0); scene.add(crownCore);
+{ const h=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffd36a,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false})); h.scale.setScalar(6); crownCore.add(h); }
+for(let i=0;i<5;i++){
+  const a=Math.PI/4 + i/5*Math.PI*2, c=Math.cos(a), s=Math.sin(a);
+  const petal=new THREE.Mesh(new THREE.IcosahedronGeometry(1,1), mat(0xf3e2b0,{emissive:0xffcf73, emissiveIntensity:.08}));
+  petal.scale.set(.75,.16,1.7); petal.position.set(c*1.55,36.2,s*1.55); petal.rotation.y = Math.PI/2 - a; petal.rotation.x = -.25; scene.add(petal);
+  hotspot(new V3(c*2.9,36.9,s*2.9), 4, i, .5);
+}
+
+/* ---------------- views ---------------- */
+const VIEWS = [
+  {pos:[13.5,13,13.5], target:[0,1,0]},
+  {pos:[TRAIL_C.x-9, 18, TRAIL_C.z-6], target:[TRAIL_C.x+1.5,0.6,TRAIL_C.z+2.5]},
+  {pos:[14.5,18.5,14.5], target:[0,11.5,0]},
+  {pos:[13.2,24.6,13.2], target:[0,20.6,0]},
+  {pos:[11,43.5,11], target:[0,36.2,0]},
+];
+const OVERVIEW = {pos:[44,27,44], target:[0,17,0]};
+const SIGN_POS = [new V3(0,2.5,0), TRAIL_C.clone().setY(1.6), new V3(0,11.5,0), new V3(0,21,0), new V3(0,36.9,0)];
+
+function segDist(px,pz,ax,az,bx,bz){ const dx=bx-ax, dz=bz-az, l=dx*dx+dz*dz; let k=l? ((px-ax)*dx+(pz-az)*dz)/l : 0; k=Math.max(0,Math.min(1,k)); return Math.hypot(px-ax-dx*k, pz-az-dz*k); }
+const nearView = (x,z,d=6.5) => [...VIEWS,OVERVIEW].some(v=>{ const [px,,pz]=v.pos,[tx,,tz]=v.target; return segDist(x,z,tx,tz,tx+(px-tx)*1.9,tz+(pz-tz)*1.9)<d; });
+/* ---------------- the wider forest ---------------- */
+const nearTrail = (x,z,d) => trailPts.some(p=>Math.hypot(p.x-x,p.z-z)<d) || [0,.2,.4,.6,.8,1].some(t=>{const p=trail.getPointAt(t); return Math.hypot(p.x-x,p.z-z)<d;});
+for(let k=0;k<80;k++){
+  const a=R(0,Math.PI*2), r=R(24,120), x=Math.cos(a)*r, z=Math.sin(a)*r; if(nearTrail(x,z,6)) continue;
+  if(nearView(x,z,8)) continue;
+  const H=R(14,34), s=R(.7,1.3), y0=groundH(x,z);
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(.35*s,.75*s,H,7), k%3? barkMat:barkDark); t.position.set(x,y0+H/2,z); scene.add(t);
+  const n=2+Math.floor(R(0,3)); for(let j=0;j<n;j++) clump(x+R(-2.5,2.5), y0+H+R(-1.5,1.5), z+R(-2.5,2.5), R(2.6,5.2), .55);
+}
+for(let k=0;k<16;k++){ // palms
+  const a=R(0,Math.PI*2), r=R(15,45), x=Math.cos(a)*r, z=Math.sin(a)*r; if(nearTrail(x,z,5)) continue;
+  if(nearView(x,z,9)) continue;
+  const H=R(6,11), y0=groundH(x,z), tilt=R(-.15,.15);
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(.18,.3,H,6), barkMat); t.position.set(x,y0+H/2,z); t.rotation.z=tilt; scene.add(t);
+  leafFan(new V3(x - Math.sin(tilt)*H/2, y0+H, z), 9, 2.6, 1.75, 0x3f8a35, R(0,3));
+}
+{ // ferns, instanced
+  const plants=[]; while(plants.length<170){ const a=R(0,Math.PI*2), r=R(9.5,48), x=Math.cos(a)*r, z=Math.sin(a)*r; if(nearTrail(x,z,2.6) || (Math.hypot(x-TRAIL_C.x+9,z-TRAIL_C.z+6)<9)) continue; plants.push([x,z]); }
+  const per=7, im=new THREE.InstancedMesh(leafGeo, leafMat, plants.length*per), o=new THREE.Object3D(), c=new THREE.Color(); let n=0;
+  plants.forEach(([x,z])=>{ const s=R(.8,1.9), base=R(0,6), hue=R(.25,.33);
+    for(let k=0;k<per;k++){ o.position.set(x,groundH(x,z),z); o.rotation.set(0,0,0); o.rotateY(base+k/per*Math.PI*2); o.rotateX(R(.7,1.2)); o.scale.setScalar(s*R(.8,1.1)); o.updateMatrix(); im.setMatrixAt(n,o.matrix); c.setHSL(hue,.5,R(.22,.34)); im.setColorAt(n,c); n++; } });
+  scene.add(im);
+}
+for(let k=0;k<28;k++){ // hanging vines
+  const a=R(0,Math.PI*2), r=R(9,14.5), x=Math.cos(a)*r, z=Math.sin(a)*r, y=R(25,27.5), L=R(6,16);
+  const c=new THREE.CatmullRomCurve3([new V3(x,y,z), new V3(x+R(-.6,.6),y-L*.35,z+R(-.6,.6)), new V3(x+R(-.8,.8),y-L*.7,z+R(-.8,.8)), new V3(x+R(-.5,.5),y-L,z+R(-.5,.5))]);
+  scene.add(new THREE.Mesh(new THREE.TubeGeometry(c,20,.05,4), mat(0x456b26)));
+}
+const shafts=[]; for(let k=0;k<6;k++){ // light shafts
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(.6,4.2,70,16,1,true), new THREE.MeshBasicMaterial({color:0xfff1b8, transparent:true, opacity:.045, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide}));
+  const a=R(0,Math.PI*2), r=R(9,28); m.position.set(Math.cos(a)*r, 30, Math.sin(a)*r); m.rotation.set(R(-.2,.2),0,R(-.25,.25)); m.userData.ph=R(0,6); scene.add(m); shafts.push(m);
+}
+
+/* fireflies */
+const FF=520, ffBase=new Float32Array(FF*3), ffPh=new Float32Array(FF);
+for(let i=0;i<FF;i++){ const a=R(0,Math.PI*2), r=Math.sqrt(rnd())*34+2; ffBase[i*3]=Math.cos(a)*r; ffBase[i*3+1]=R(.4,32); ffBase[i*3+2]=Math.sin(a)*r; ffPh[i]=R(0,100); }
+const ffGeo=new THREE.BufferGeometry(); ffGeo.setAttribute('position', new THREE.BufferAttribute(ffBase.slice(),3));
+const fireflies=new THREE.Points(ffGeo, new THREE.PointsMaterial({map:GLOW, color:0xfff0a0, size:.42, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending}));
+scene.add(fireflies);
+
+/* butterflies */
+const butterflies=[[0x2f8cff,3.5],[0xffa21f,7],[0x2f8cff,14.5],[0xff5a8a,5],[0x6fd0ff,17.5]].map(([col,y],k)=>{
+  const g=new THREE.Group(), wm=new THREE.MeshBasicMaterial({color:col, side:THREE.DoubleSide});
+  const wg=new THREE.CircleGeometry(.32,6); wg.scale(1,.75,1); wg.rotateX(-Math.PI/2);
+  const L=new THREE.Group(), Rw=new THREE.Group(); const l=new THREE.Mesh(wg,wm); l.position.x=-.3; L.add(l); const r=new THREE.Mesh(wg,wm); r.position.x=.3; Rw.add(r);
+  g.add(L,Rw); g.userData={L,Rw,y,ph:k*1.7,rad:R(9,13),sp:R(.18,.3)*(k%2?1:-1)}; scene.add(g); return g;
+});
+
+/* the macaw */
+function makeMacaw(){
+  const g=new THREE.Group(), red=mat(0xd8261c), yel=mat(0xf4c020), blu=mat(0x1e5fc8), wht=mat(0xf2efe6), blk=mat(0x1a1a1a), beak=mat(0xe9e1c9);
+  const add=(geo,m,p,s=[1,1,1],r=[0,0,0],parent=g)=>{ const o=new THREE.Mesh(geo,m); o.position.set(...p); o.scale.set(...s); o.rotation.set(...r); parent.add(o); return o; };
+  add(new THREE.SphereGeometry(.45,8,6), red, [0,.62,0], [.8,1.3,.8], [.3,0,0]);
+  const head=new THREE.Group(); head.position.set(0,1.22,.18); g.add(head);
+  add(new THREE.SphereGeometry(.32,8,6), red, [0,0,0], [1,1,1], [0,0,0], head);
+  add(new THREE.SphereGeometry(.2,8,6), wht, [0,.02,.17], [1.1,.8,.6], [0,0,0], head);
+  add(new THREE.ConeGeometry(.13,.34,6), beak, [0,-.08,.36], [1,1,1], [Math.PI/2+.7,0,0], head);
+  add(new THREE.SphereGeometry(.045,6,4), blk, [.14,.08,.22], [1,1,1], [0,0,0], head);
+  add(new THREE.SphereGeometry(.045,6,4), blk, [-.14,.08,.22], [1,1,1], [0,0,0], head);
+  const wings=[-1,1].map(sx=>{ const w=new THREE.Group(); w.position.set(sx*.33,.85,-.02); g.add(w);
+    add(new THREE.SphereGeometry(.3,7,5), yel, [sx*.08,-.15,0], [.35,.8,.7], [0,0,0], w);
+    add(new THREE.SphereGeometry(.3,7,5), blu, [sx*.1,-.62,-.08], [.3,1.1,.6], [-.2,0,0], w); return w; });
+  add(new THREE.ConeGeometry(.16,1.7,5), red, [0,-.5,-.42], [1,1,.6], [Math.PI-.35,0,0]);
+  add(new THREE.ConeGeometry(.1,1.2,5), blu, [0,-.6,-.5], [1,1,.6], [Math.PI-.3,0,0]);
+  g.userData={head,wings};
+  return g;
+}
+const macaw = makeMacaw();
+const PERCH_T = 2/5+.1, perchP = ring.getPoint(PERCH_T).add(new V3(0,.2,0)), perchA = RING_A0+PERCH_T*Math.PI*2;
+macaw.position.copy(perchP); macaw.rotation.y = Math.PI/2 - perchA; macaw.scale.setScalar(1.15); scene.add(macaw);
+const macawHit = new THREE.Mesh(new THREE.SphereGeometry(1.2,8,6), new THREE.MeshBasicMaterial({visible:false})); macawHit.position.y=.7; macaw.add(macawHit);
+let flight=null;
+
+function itemView(L,pos){
+  const out=new V3(pos.x,0,pos.z); if(out.lengthSq()<.01) out.set(1,0,1); out.normalize();
+  const side=new V3(-out.z,0,out.x), d=[7,8,8,8.5,10][L];
+  const cam=pos.clone().addScaledVector(out,d).addScaledVector(side,d*.35); cam.y += [4,4,2.6,2.6,4.5][L];
+  if(L===1){ cam.copy(pos).add(new V3(-5.5,4.5,-4)); }
+  return {pos:cam.toArray(), target:pos.toArray()};
+}
+
+let tween=null;
+const isNarrow = () => innerWidth<=820;
+function flyTo(v, dur=1.8){
+  const t1=new V3(...v.target), K=isNarrow()? (innerWidth<innerHeight?1.9:1.35) : Math.min(1.8, Math.max(1.12, 1550/innerWidth));
+  const p1=new V3(...v.pos).sub(t1).multiplyScalar(K).add(t1);
+  tween={p0:camera.position.clone(), t0:controls.target.clone(), p1, t1, start:performance.now(), dur:(REDUCED?.3:dur)*1000, arc:Math.min(7, camera.position.distanceTo(p1)*.12)};
+}
+const ease = k => k<.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2;
+
+/* ---------------- UI ---------------- */
+document.querySelectorAll('.logo,.mark').forEach(el=>el.innerHTML=LOGO);
+let cur=-1, sel=-1;
+const chipText = (l,i) => l===4 ? ['K','S','B','Id','Im'][i] : String(i+1);
+const pad = n => String(n).padStart(2,'0');
+
+const rail=$('#rail');
+rail.innerHTML = [[-1,'Whole tree','#ffffff'],...[4,3,2,1,0].map(l=>[l,LEVELS[l].stratum,hex(LEVELS[l].color)])]
+  .map(([l,n,c])=>`<button class="stop" data-l="${l}" style="--c:${c}" aria-label="${n}"><span class="nm">${n}</span><span class="d"></span></button>`).join('');
+rail.addEventListener('click', e=>{ const b=e.target.closest('[data-l]'); if(b) go(+b.dataset.l); });
+
+const labelsEl=$('#labels');
+hotspots.forEach(m=>{ const {L,i}=m.userData, it=LEVELS[L].items[i];
+  const el=document.createElement('div'); el.className='lbl'; el.style.setProperty('--c',hex(LEVELS[L].color));
+  el.innerHTML=`<span class="n">${chipText(L,i)}</span><span class="t">${it.t}</span>`; el.addEventListener('click',()=>pick(L,i)); labelsEl.appendChild(el); m.userData.el=el; });
+const signs = LEVELS.map((L,l)=>{ const el=document.createElement('div'); el.className='sign'; el.style.setProperty('--c',hex(L.color));
+  el.innerHTML=`<span class="stem"></span><span class="pill"><span class="n">${l+1}</span>${L.stratum}</span>`; el.addEventListener('click',()=>go(l)); labelsEl.appendChild(el); return el; });
+
+const ARROW = d => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+const card=$('#card');
+let swapT;
+function renderCard(animate){
+  const draw = () => {
+    if(cur<0){
+      card.style.setProperty('--c','#ffffff');
+      card.innerHTML=`<div class="kick"><i style="background:var(--brand);box-shadow:0 0 10px var(--brand)"></i>The whole tree</div>
+        <h2>Rooted in belief.<br>Grown for impact.</h2>
+        <p>Five layers, from the roots to the emergent crown. Climb it in order, or click anything that glows.</p>
+        <button class="cta" data-go="0">Begin at the roots <span aria-hidden="true">&rarr;</span></button>${progBar()}`;
+    } else {
+      const L=LEVELS[cur], it=sel>=0? L.items[sel] : null;
+      card.style.setProperty('--c',hex(L.color));
+      card.innerHTML=`<div class="kick"><i></i>${pad(cur+1)} &nbsp;${L.stratum}<span style="opacity:.55;font-weight:600">${L.group}</span></div>
+        <div class="navbtns"><button data-go="${cur-1}" aria-label="Down a layer">${ARROW('M10 3 5 8l5 5')}</button><button data-go="${cur<4?cur+1:-1}" aria-label="Up a layer">${ARROW('M6 3l5 5-5 5')}</button></div>
+        <h2>${L.title}</h2>
+        <p>${L.intro}</p>
+        <div class="chips">${L.items.map((x,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===sel}" title="${x.t}">${chipText(cur,i)}</button>`).join('')}</div>
+        ${it ? `<div class="more"><b>${it.t}</b>${it.q?`<div class="q">${it.q}</div>`:''}<div class="d">${it.d}</div></div>`
+             : L.callout ? `<div class="more"><div class="x"><b>${L.callout[0]}</b> ${L.callout[1]}</div></div>` : ''}
+        ${progBar()}`;
+      card.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.i; i===sel? go(cur) : pick(cur,i); }));
+    }
+    card.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.go)));
+    rail.querySelectorAll('[data-l]').forEach(b=>b.setAttribute('aria-current', String(+b.dataset.l===cur)));
+    card.classList.remove('swap'); layout();
+  };
+  clearTimeout(swapT);
+  if(animate && !REDUCED){ card.classList.add('swap'); swapT=setTimeout(draw,220); } else draw();
+}
+
+function go(l){
+  const changed = l!==cur || sel>=0;
+  cur=l; sel=-1;
+  controls.autoRotate = l<0 && !REDUCED;
+  flyTo(l<0?OVERVIEW:VIEWS[l]);
+  renderCard(changed);
+  const h = l<0 ? '' : LEVELS[l].id;
+  if(!auto && location.hash.slice(1)!==h){ try{ history.replaceState(null,'',h?'#'+h:location.pathname+location.search); }catch(e){} }
+}
+function pick(L,i){
+  const lvl = L!==cur; cur=L; sel=i; controls.autoRotate=false;
+  flyTo(itemView(L, LEVELS[L].items[i].pos), 1.4);
+  renderCard(lvl);
+}
+addEventListener('hashchange',()=>{ if(location.hash==='#tour'){ kiosk=true; enter(); if(!auto) startAuto(); return; } const l=LEVELS.findIndex(L=>L.id===location.hash.slice(1)); if(l!==cur) go(l); });
+addEventListener('keydown',e=>{
+  if(!$('#intro').classList.contains('gone')) return;
+  if(e.key==='ArrowRight'||e.key==='ArrowUp'){ e.preventDefault(); go(cur<4?cur+1:-1); }
+  else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){ e.preventDefault(); go(cur>-1?cur-1:4); }
+  else if(e.key==='Escape') go(-1);
+});
+const enter=()=>{ $('#intro').classList.add('gone'); document.body.classList.remove('intro'); };
+$('#start').addEventListener('click',()=>{ enter(); go(-1); });
+$('#play').addEventListener('click',()=>{ enter(); startAuto(); });
+
+/* ---------------- auto tour ----------------
+   Overview, then each layer and each item in turn, looping forever.
+   Any touch, drag, click or key pauses it. Open the page with #tour to start it
+   straight away (for screens at events); in that mode it resumes after 45s idle. */
+let auto=null, kiosk=false, lastInput=performance.now();
+const TOUR_STEPS=[{l:-1,i:-1,d:6}];
+LEVELS.forEach((L,l)=>{ TOUR_STEPS.push({l,i:-1,d:7}); L.items.forEach((_,i)=>TOUR_STEPS.push({l,i,d:4.6})); });
+function progBar(){ return auto ? `<div class="prog"><span style="animation-duration:${auto.dur-.25}s"></span></div>` : ''; }
+const PLAY='<svg viewBox="0 0 12 12"><path d="M3 1.5v9l7.5-4.5z"/></svg>', PAUSE='<svg viewBox="0 0 12 12"><path d="M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z"/></svg>';
+function tourBtn(){ const b=$('#tour'); b.setAttribute('aria-pressed',String(!!auto)); b.querySelector('.ic').innerHTML=auto?PAUSE:PLAY; b.querySelector('.tx').textContent=auto?'Pause tour':'Play tour'; }
+function startAuto(){ auto={idx:-1,next:0,dur:0}; hideHint(); tourBtn(); advance(); }
+function stopAuto(){ if(!auto) return; auto=null; tourBtn(); controls.autoRotate=false; card.querySelector('.prog')?.remove(); }
+function advance(){ auto.idx=(auto.idx+1)%TOUR_STEPS.length; const st=TOUR_STEPS[auto.idx];
+  auto.dur=st.d+1.8; auto.next=performance.now()+auto.dur*1000;
+  st.i<0 ? go(st.l) : pick(st.l,st.i); }
+$('#tour').addEventListener('click',()=>{ lastInput=performance.now(); auto? stopAuto() : startAuto(); });
+const userInput=()=>{ lastInput=performance.now(); stopAuto(); };
+[card,rail,labelsEl].forEach(el=>el.addEventListener('pointerdown',userInput));
+renderer.domElement.addEventListener('pointerdown',userInput);
+renderer.domElement.addEventListener('wheel',userInput,{passive:true});
+addEventListener('keydown',userInput,true);
+const hideHint=()=>$('.hint').classList.add('gone');
+setTimeout(hideHint, 14000);
+
+let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),3200); }
+const SQUAWKS=['Every loop of the canopy vine reaches a little further.','Design from the target backwards.','Protect the live time.','Roots first, fruit later.'];
+let sq=0;
+
+/* picking */
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2();
+const hitTargets=[...hotspots.map(m=>m.userData.hit), macawHit];
+let hover=null, down=null;
+function pickAt(e){ const r=renderer.domElement.getBoundingClientRect(); ptr.set((e.clientX-r.left)/r.width*2-1, -(e.clientY-r.top)/r.height*2+1); ray.setFromCamera(ptr,camera); const h=ray.intersectObjects(hitTargets,false)[0]; return h? (h.object===macawHit?'macaw':h.object.userData.owner) : null; }
+renderer.domElement.addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse') return; const h=pickAt(e); if(hover && hover!=='macaw') hover.userData.el.classList.remove('peek'); hover=h; if(h && h!=='macaw') h.userData.el.classList.add('peek'); renderer.domElement.style.cursor=h?'pointer':''; });
+renderer.domElement.addEventListener('pointerdown',e=>{ down=[e.clientX,e.clientY]; });
+renderer.domElement.addEventListener('pointerup',e=>{ if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6) return; const h=pickAt(e); if(!h) return;
+  if(h==='macaw'){ if(!flight) flight={start:clock.elapsedTime}; toast(SQUAWKS[sq++%SQUAWKS.length]); return; }
+  pick(h.userData.L,h.userData.i); });
+controls.addEventListener('start',()=>{ controls.autoRotate=false; tween=null; hideHint(); });
+
+/* keep the scene centred in the space the card leaves free (eased, so it never jumps) */
+const off={x:0,y:0,tx:0,ty:0};
+function layout(){ const w=innerWidth, h=innerHeight;
+  if(isNarrow()){ off.tx=0; off.ty=Math.round(card.offsetHeight*.42); }
+  else { off.tx=-Math.round((card.offsetWidth+30)*.32); off.ty=Math.round(Math.max(0,card.offsetHeight-h*.35)*.3); } }
+function resize(){ const w=innerWidth,h=innerHeight; camera.aspect=w/h; renderer.setSize(w,h); composer.setSize(w,h); bloom.resolution.set(w,h); layout(); applyOffset(true); }
+function applyOffset(force){ const nx=off.x+(off.tx-off.x)*.08, ny=off.y+(off.ty-off.y)*.08;
+  if(!force && Math.abs(nx-off.x)<.05 && Math.abs(ny-off.y)<.05) return; off.x=nx; off.y=ny;
+  camera.setViewOffset(innerWidth,innerHeight,off.x,off.y,innerWidth,innerHeight); camera.updateProjectionMatrix(); }
+addEventListener('resize',resize);
+new ResizeObserver(layout).observe(card);
+
+/* ---------------- loop ---------------- */
+const clock=new THREE.Clock();
+const tmp=new V3(), tmp2=new V3(), dirV=new V3();
+function frame(){
+  const dt=Math.min(clock.getDelta(),.05), t=clock.elapsedTime;
+  if(auto && performance.now()>auto.next) advance();
+  if(kiosk && !auto && performance.now()-lastInput>45000) startAuto();
+  if(auto){ controls.autoRotate=!tween && !REDUCED; controls.autoRotateSpeed=.22; } else controls.autoRotateSpeed=.35;
+  if(tween){ const k=Math.min(1,(performance.now()-tween.start)/tween.dur), e=ease(k);
+    camera.position.lerpVectors(tween.p0,tween.p1,e); camera.position.y += Math.sin(Math.PI*k)*tween.arc;
+    controls.target.lerpVectors(tween.t0,tween.t1,e); if(k>=1) tween=null; }
+  controls.update();
+  applyOffset();
+
+  hotspots.forEach((m,n)=>{ const u=m.userData, isCur=u.L===cur, lit=cur<0||isCur, active=isCur&&u.i===sel, hov=hover===m;
+    const goal=(1+.05*Math.sin(t*2+n))*(hov?1.25:1)*(active?1.3:1)*(lit?1:.7);
+    u.s+=(goal-u.s)*Math.min(1,dt*7); m.scale.setScalar(u.s);
+    u.mark.quaternion.copy(camera.quaternion);
+    if(active) u.mark.rotateZ(t*.8);
+    const g=u.L===4?.55:1; u.ringMat.color.copy(u.base).multiplyScalar(lit ? (active? 3.2 : 2.2)*g : .55);
+    u.core.material.emissiveIntensity = (lit ? 2.4 : .5)*(u.L===4?.45:1);
+    u.halo.material.opacity = lit ? .45 : .12; });
+  crownCore.rotation.y += dt*.3;
+  pulses.forEach(s=>{ s.position.copy(ring.getPoint((t*.045+s.userData.o)%1)); s.position.y+=.26; });
+  shafts.forEach(s=>s.material.opacity=.035+.02*Math.sin(t*.4+s.userData.ph));
+
+  const fp=ffGeo.attributes.position.array;
+  for(let i=0;i<FF;i++){ const p=ffPh[i]; fp[i*3]=ffBase[i*3]+Math.sin(t*.3+p)*.9; fp[i*3+1]=ffBase[i*3+1]+Math.sin(t*.5+p*1.3)*.6; fp[i*3+2]=ffBase[i*3+2]+Math.cos(t*.27+p)*.9; }
+  ffGeo.attributes.position.needsUpdate=true;
+  fireflies.material.opacity=.75+.25*Math.sin(t*1.7);
+
+  butterflies.forEach(b=>{ const u=b.userData, a=t*u.sp+u.ph, r=u.rad+2*Math.sin(t*.7+u.ph);
+    b.position.set(Math.cos(a)*r, u.y+1.2*Math.sin(t*1.3+u.ph), Math.sin(a)*r);
+    const a2=a+.05*Math.sign(u.sp); tmp.set(Math.cos(a2)*r, b.position.y, Math.sin(a2)*r); b.lookAt(tmp);
+    const f=Math.sin(t*16+u.ph)*1.1; u.L.rotation.z=f; u.Rw.rotation.z=-f; });
+
+  const {head,wings}=macaw.userData;
+  if(flight){ const u=Math.min(1,(t-flight.start)/7), a=perchA+u*Math.PI*2, r=RING_R+(14-RING_R)*Math.sin(Math.PI*u), y=perchP.y+3.5*Math.sin(Math.PI*u);
+    macaw.position.set(Math.cos(a)*r,y,Math.sin(a)*r);
+    const a2=a+.05; tmp2.set(Math.cos(a2)*(r+.01), y, Math.sin(a2)*(r+.01)); dirV.subVectors(tmp2,macaw.position);
+    macaw.rotation.set(-.5*Math.sin(Math.PI*u), Math.atan2(dirV.x,dirV.z), 0);
+    const f=Math.sin(t*16)*.9; wings[0].rotation.z=-f; wings[1].rotation.z=f;
+    if(u>=1){ flight=null; macaw.position.copy(perchP); macaw.rotation.set(0,Math.PI/2-perchA,0); wings.forEach(w=>w.rotation.z=0); } }
+  else { head.rotation.y=Math.sin(t*.8)*.5; head.rotation.x=Math.sin(t*1.3)*.1; }
+
+  composer.render();
+  updateLabels();
+  requestAnimationFrame(frame);
+}
+
+const occRay=new THREE.Raycaster();
+let occFrame=0;
+function updateLabels(){
+  const w=innerWidth, h=innerHeight, introOpen=!$('#intro').classList.contains('gone'); occFrame++;
+  hotspots.forEach(m=>{ const u=m.userData, el=u.el, on=u.L===cur && !introOpen;
+    el.classList.toggle('on',on); el.classList.toggle('active',on&&u.i===sel);
+    if(!on && !el.classList.contains('peek')) return;
+    tmp.copy(m.position).project(camera);
+    if(tmp.z>1||Math.abs(tmp.x)>1.2||Math.abs(tmp.y)>1.2){ el.style.visibility='hidden'; return; } el.style.visibility='';
+    el.style.transform=`translate(${(tmp.x+1)/2*w - 12}px,${(1-tmp.y)/2*h - 12}px) translate(26px,-26px)`;
+    if(on && occFrame%6===0){ const d=camera.position.distanceTo(m.position); dirV.subVectors(m.position,camera.position).normalize(); occRay.set(camera.position,dirV); occRay.far=d-.8;
+      el.classList.toggle('behind', occRay.intersectObjects(occluders,false).length>0); } });
+  signs.forEach((el,l)=>{ const on=cur<0 && !introOpen; el.classList.toggle('on',on); if(!on) return;
+    tmp.copy(SIGN_POS[l]).project(camera); if(tmp.z>1){ el.style.visibility='hidden'; return; } el.style.visibility='';
+    const x=(tmp.x+1)/2*w, y=(1-tmp.y)/2*h; el.style.transform=`translate(${x+(l===1?10:36)}px,${y}px) translate(0,-50%)`; });
+}
+
+renderCard(false); resize();
+tourBtn();
+if(location.hash==='#tour'){ kiosk=true; enter(); startAuto(); }
+const startL = LEVELS.findIndex(L=>L.id===location.hash.slice(1));
+if(startL>=0){ $('#intro').classList.add('gone'); document.body.classList.remove('intro'); go(startL); }
+requestAnimationFrame(()=>{ frame(); setTimeout(()=>$('#loader').classList.add('gone'),250); });
+</script>
+</body>
+</html>
